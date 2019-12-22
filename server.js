@@ -1,8 +1,10 @@
 require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
-
 const app = express();
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
+
 const { DBURL } = process.env;
 
 mongoose.connect(DBURL,
@@ -30,6 +32,16 @@ app.use(express.urlencoded({
 
 app.use(require("./routes"));
 
-app.listen(PORT, () => {
+let userCount = 0;
+io.on("connection", (socket) => {
+    userCount = userCount + 1;
+    io.to(socket.id).emit("SET_NAME", `user${userCount}`);
+
+    socket.on("SEND_MESSAGE", (name, text) => {
+        io.emit("RECEIVE_MESSAGE", `${name}: ${text}`);
+    });
+});
+
+http.listen(PORT, () => {
     console.log("SERVER LISTEN");
 });
